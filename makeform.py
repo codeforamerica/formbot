@@ -1,6 +1,6 @@
 from PIL import Image
-import bubble as Bubble
-import regmark as rm
+import formbot.bubble as Bubble
+import formbot.regmark as rm
 import json
 
 
