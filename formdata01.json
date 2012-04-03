@@ -1,0 +1,26 @@
+{
+  "id" : "FORM0001",
+  "regmarks" :
+    [ { "regmark" : {"type" : 0, "bbox" : [50, 50, 250, 250]} },
+      { "regmark" : {"type" : 0, "bbox" : [50, 950, 250, 1150]} },
+      { "regmark" : {"type" : 0, "bbox" : [550, 950, 750, 1150]} }
+    ],
+  "sets" :
+    [ {"bubbles" :
+        [ {"center" : [150, 425], "radius" : 15},
+          {"center" : [210, 425], "radius" : 15},
+          {"center" : [270, 425], "radius" : 15},
+          {"center" : [330, 425], "radius" : 15},
+          {"center" : [390, 425], "radius" : 15}
+        ]
+      },
+      {"bubbles" :
+        [ {"center" : [150, 460], "radius" : 15},
+          {"center" : [210, 460], "radius" : 15},
+          {"center" : [270, 460], "radius" : 15},
+          {"center" : [330, 460], "radius" : 15},
+          {"center" : [390, 460], "radius" : 15}
+        ]
+      }
+    ]
+}
