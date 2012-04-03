@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 #from numpy import fft
 
-from regmark import *
+from formbot.regmark import *
 
 
 ##
@@ -34,15 +34,24 @@ r2.draw(form2)
 # shift the form a little
 #form2s = form2.transform(form2.size, Image.AFFINE, (1, 0, 15, 0, 1, 30))
 theta = 7*np.pi/180
+alpha = .94;
 w = 15 + 30j
+affine = (alpha*np.cos(theta), -alpha*np.sin(theta), int(np.real(w)), alpha*np.sin(theta), alpha*np.cos(theta), int(np.imag(w)))
 tmp = Image.new("RGBA", im.size, (255,255,255,255))
 #tmp.putdata(form2.getdata(), -1, 255)
 tmp.putdata(map(lambda a: (255-a[0],255-a[1],255-a[2],255), form2.getdata()))
-form2s = tmp.transform(form2.size, Image.AFFINE, (np.cos(theta), -np.sin(theta), 15, np.sin(theta), np.cos(theta), 30), Image.BILINEAR)
+#form2s = tmp.transform(form2.size, Image.AFFINE, (np.cos(theta), -np.sin(theta), 15, np.sin(theta), np.cos(theta), 30), Image.BILINEAR)
+form2s = tmp.transform(form2.size, Image.AFFINE, affine, Image.BILINEAR)
 tmp = form2s.copy()
 form2s.putdata(map(lambda a: (255-a[0],255-a[1],255-a[2],255), tmp.getdata()))
 
 form2p = fiximage(form2s, r0, r1, r2)
+
+mse = imgmse(form2, form2p)
+print("mse: %s" % mse)
+
+f2arr = img2array(form2)
+f2arrp = img2array(form2p)
 
 ## r0loc = r0.find(form2s)
 ## r0loc_orig = r0.get_center()

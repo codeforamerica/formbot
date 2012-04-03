@@ -9,9 +9,9 @@ import json
 # Create a 2D array from an image
 def img2array(im):
   im = im.convert("L")
-  x = np.zeros(flip(im.size))
-  imseq = im.getdata()
-  x.flat = map(lambda a: 255 - a, imseq)
+  x = np.empty(flip(im.size))
+  x.flat = im.getdata()
+  x = 255 - x
   return x
 
 def array2img(x):
@@ -60,27 +60,24 @@ class RegMark:
     d.ellipse(innerbbox, outline=color, fill=color)
   def find(self, im):
     # Create a 2D array from the image
-    im = im.convert("L")
-    x = np.zeros(flip(im.size))
-    imseq = im.getdata()
-    x.flat = map(lambda a: 255 - a, imseq)
-    #x = x.transpose()
+    if im.mode != "L":
+      im = im.convert("L")
+    x = np.empty(flip(im.size))
+    # For the signal/filter, a mark is a high value. For the image file, a mark is a low value (black)
+    x.flat = im.getdata()
+    x = 255 - x
     #
     # Create a 2D filter array from the registration mark
     regim = Image.new("L", im.size, 255)
     self.drawhelp(self.zbbox, self.zinnerbbox, regim)
-    h = np.zeros(flip(regim.size))
-    regimseq = regim.getdata()
-    # For the signal/filter, a mark is a high value. For the image, a mark is a low value (black)
-    h.flat = map(lambda a: 255 - a, regimseq)
-    #h = h.transpose()
+    h = np.empty(flip(regim.size))
+    # For the signal/filter, a mark is a high value. For the image file, a mark is a low value (black)
+    h.flat = regim.getdata()
+    h = 255 - h
     #
     # Take FFTs of image and filter
     X = fft.fft2(x)
     H = fft.fft2(h)
-    # XXX
-    #print(X.shape)
-    #print(H.shape)
     #
     # Find the inverse FFT of the product
     Y = np.multiply(X, H)
@@ -100,6 +97,7 @@ class RegMark:
     print("expected_max: (%s, %s)" % expected_max)
     maxval = 0
     maxloc = (-1, -1)
+    # TODO: Use numpy array operations to make this more efficient
     for j in range(expected_min[0], expected_max[0]):
       for i in range(expected_min[1], expected_max[1]):
         if y[i,j] > maxval:
@@ -123,11 +121,6 @@ def fiximage(ims, r0, r1, r2):
   r1loc_orig = r1.get_center()
   r2loc_orig = r2.get_center()
   #
-  #  XXX Calculate the shift vectors
-  #r0shift = np.subtract(r0loc, r0loc_orig)
-  #r1shift = np.subtract(r1loc, r1loc_orig)
-  #r2shift = np.subtract(r2loc, r2loc_orig)
-  #
   # Turn the points into complex numbers to make the math simpler
   z0 = r0loc_orig[0] + 1j*r0loc_orig[1]
   z0p = r0loc[0] + 1j*r0loc[1]
@@ -137,26 +130,28 @@ def fiximage(ims, r0, r1, r2):
   z2p = r2loc[0] + 1j*r2loc[1]
   #
   # 0
-  theta0 = -1j*np.log((z1p - z0p) / (z1 - z0))
-  w0 = z0p - z0*np.exp(1j*theta0)
+  tmp = (z1p - z0p) / (z1 - z0)
+  theta0 = np.angle(tmp)
+  alpha0 = np.abs(tmp)
+  w0 = z0p - alpha0*z0*np.exp(1j*theta0)
   # 1
-  theta1 = -1j*np.log((z2p - z0p) / (z2 - z0))
-  w1 = z0p - z0*np.exp(1j*theta1)
-  #
-  # XXX
-  #print("w0: %s, theta0: %s" % (w0, np.real(theta0)))
-  #print("w1: %s, theta1: %s" % (w1, np.real(theta1)))
+  tmp = (z2p - z0p) / (z2 - z0)
+  theta1 = np.angle(tmp)
+  alpha1 = np.abs(tmp)
+  w1 = z0p - alpha1*z0*np.exp(1j*theta1)
   #
   # Average the calcuated rotation angles and shifts
   wp = (lambda x: (np.real(x), np.imag(x))) (np.average((w0, w1)))
   thetap = np.average((np.real(theta0), np.real(theta1)))
+  alphap = (alpha0 + alpha1)/2
   #
   # Create a fixed version of the input image
   tmp = Image.new("L", ims.size, 255)
-  tmp.putdata(map(lambda a: 255-a, ims.getdata()))
-  imfix = tmp.transform(ims.size, Image.AFFINE, (np.cos(thetap), -np.sin(thetap), wp[0], np.sin(thetap), np.cos(thetap), wp[1]), Image.BILINEAR)
+  tmp.putdata(ims.getdata(), -1, 255)
+  affine = (alphap*np.cos(thetap), -alphap*np.sin(thetap), wp[0], alphap*np.sin(thetap), alphap*np.cos(thetap), wp[1])
+  imfix = tmp.transform(ims.size, Image.AFFINE, affine, Image.BILINEAR)
   tmp = imfix.copy()
-  imfix.putdata(map(lambda a: 255-a, tmp.getdata()))
+  imfix.putdata(tmp.getdata(), -1, 255)
   #
   return imfix
 
