@@ -14,11 +14,24 @@ class Bubble:
   def set_radius(self, radius): self.radius = radius
   # Draw this bubble on the image im.
   def draw(self, im):
+    color = None
+    if im.mode == "L":
+      color = 0
+    elif im.mode == "RGBA":
+      color = (0,0,0,255)
+    elif im.mode == "RGB":
+      color = (0,0,0)
     draw = ImageDraw.Draw(im)
-    draw.ellipse((self.center[0] - self.radius, self.center[1] - self.radius, self.center[0] + self.radius, self.center[1] + self.radius), outline=(0,0,0,255))
+    draw.ellipse((self.center[0] - self.radius, self.center[1] - self.radius, self.center[0] + self.radius, self.center[1] + self.radius), outline=color)
   def fill(self, im):
+    if im.mode == "L":
+      color = 0
+    elif im.mode == "RGBA":
+      color = (0,0,0,255)
+    elif im.mode == "RGB":
+      color = (0,0,0)
     draw = ImageDraw.Draw(im)
-    draw.ellipse((self.center[0] - self.radius, self.center[1] - self.radius, self.center[0] + self.radius, self.center[1] + self.radius), outline=(0,0,0,255), fill=(0,0,0,255))
+    draw.ellipse((self.center[0] - self.radius, self.center[1] - self.radius, self.center[0] + self.radius, self.center[1] + self.radius), outline=color, fill=color)
   def get_average_fill(self, im):
     x = int(math.floor(self.radius / SQRT2))
     # XXX
@@ -33,7 +46,8 @@ class Bubble:
     coloradder = None
     if im.mode == "RGBA":
       coloradder = lambda p: p[3]*(p[0] * 299/1000 + p[1] * 587/1000 + p[2] * 114/1000)/255
-      pass
+    elif im.mode == "RGB":
+      coloradder = lambda p: p[0] * 299/1000 + p[1] * 587/1000 + p[2] * 114/1000
     elif im.mode == "L":
       coloradder = lambda p: p
     for pixel in temp.getdata():

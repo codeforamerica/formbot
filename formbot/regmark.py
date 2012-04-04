@@ -5,6 +5,7 @@ import numpy as np
 from numpy import fft
 import json
 
+DEBUG = False
 
 # Create a 2D array from an image
 def img2array(im):
@@ -54,6 +55,8 @@ class RegMark:
     color = None
     if im.mode == "RGBA":
       color = (0,0,0,255)
+    elif im.mode == "RGB":
+      color = (0,0,0)
     elif im.mode == "L":
       color = 0
     d.ellipse(bbox, outline=color)
@@ -92,9 +95,9 @@ class RegMark:
     search_buffer = 100
     expected_min = (max(self.bbox[0] - search_buffer, 0), max(self.bbox[1] - search_buffer, 0))
     expected_max = (min(self.bbox[2] + search_buffer, y.shape[1]), min(self.bbox[3] + search_buffer, y.shape[0]))
-    # XXX
-    print("expected_min: (%s, %s)" % expected_min)
-    print("expected_max: (%s, %s)" % expected_max)
+    if DEBUG:
+      print("expected_min: (%s, %s)" % expected_min)
+      print("expected_max: (%s, %s)" % expected_max)
     maxval = 0
     maxloc = (-1, -1)
     # TODO: Use numpy array operations to make this more efficient
@@ -104,9 +107,9 @@ class RegMark:
           maxloc = (i,j)
           maxval = y[i,j]
     maxloc = flip(maxloc)
-    # XXX
-    print("maxloc: (%s, %s)" % maxloc)
-    print("maxval: %s" % maxval)
+    if DEBUG:
+      print("maxloc: (%s, %s)" % maxloc)
+      print("maxval: %s" % maxval)
     return maxloc
 
 # TODO: work with a list of registration marks. Two is probably enough, three can be optional.
@@ -134,16 +137,19 @@ def fiximage(ims, r0, r1, r2):
   theta0 = np.angle(tmp)
   alpha0 = np.abs(tmp)
   w0 = z0p - alpha0*z0*np.exp(1j*theta0)
+  if DEBUG: print("alpha0: %s\ttheta0: %s\tw0: %s" % (alpha0, theta0, w0))
   # 1
   tmp = (z2p - z0p) / (z2 - z0)
   theta1 = np.angle(tmp)
   alpha1 = np.abs(tmp)
   w1 = z0p - alpha1*z0*np.exp(1j*theta1)
+  if DEBUG: print("alpha1: %s\ttheta1: %s\tw1: %s" % (alpha1, theta1, w1))
   #
   # Average the calcuated rotation angles and shifts
   wp = (lambda x: (np.real(x), np.imag(x))) (np.average((w0, w1)))
   thetap = np.average((np.real(theta0), np.real(theta1)))
   alphap = (alpha0 + alpha1)/2
+  if DEBUG: print("alphap: %s\tthetap: %s\twp: %s" % (alphap, thetap, wp))
   #
   # Create a fixed version of the input image
   tmp = Image.new("L", ims.size, 255)
