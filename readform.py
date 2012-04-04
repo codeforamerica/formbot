@@ -2,14 +2,29 @@
 from PIL import Image
 import formbot.bubble as Bubble
 import formbot.regmark as rm
+import formbot.barcode as bc
 import json
 import sys
 import getopt
+import subprocess
+import glob
+import os
 
 
 def usage():
   print("Usage:")
   print("readform.py -i <inputfile> -d <formdatafile>")
+
+#def readcode(img):
+#  decode = 'java', '-classpath', ':'.join(glob.glob('lib/*.jar')), 'qrdecode'
+#  decode = subprocess.Popen(decode, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+#  #
+#  img.save(decode.stdin, 'PNG')
+#  decode.stdin.close()
+#  decode.wait()
+#  #
+#  decoded = decode.stdout.read().strip()
+#  return decoded
 
 def main(argv):
   try:
@@ -35,9 +50,6 @@ def main(argv):
   # for a particular survey project. Second, we fix the scanned image. Third, we read the barcode,
   # so we can look up the bubble set information. Last, we check which bubbles have been filled in.
   #
-  # Read form data
-  formsets = Bubble.readform(FORMDATA)
-  #
   # Read registration mark data
   rmarks = rm.readform(FORMDATA)
   #
@@ -45,7 +57,18 @@ def main(argv):
   form_img = Image.open(INFILE)
   #
   # Adjust image to fit the prototype
+  # TODO: After we try fixing the image once, the registration markers are easier to find.
+  # So if we try fixing again, we get closer. This is a little hacky, though. We should make
+  # that part of the registration procedure.
   form_img_fixed = rm.fiximage(form_img, rmarks[0], rmarks[1], rmarks[2])
+  form_img_fixed = rm.fiximage(form_img_fixed, rmarks[0], rmarks[1], rmarks[2])
+  #
+  # Read the barcode
+  barcodedata = bc.readbarcode(form_img_fixed)
+  print("bar code data: %s" % barcodedata)
+  #
+  # Read form data
+  formsets = Bubble.readform(FORMDATA)
   #
   # Check responses to each bubble set
   responses = []

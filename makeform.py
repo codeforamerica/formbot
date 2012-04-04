@@ -2,6 +2,7 @@
 from PIL import Image
 import formbot.bubble as Bubble
 import formbot.regmark as rm
+import formbot.barcode as bc
 import json
 import sys
 import getopt
@@ -38,9 +39,6 @@ def main(argv):
   formdata = json.load(formdatafile)
   formdatafile.close()
   #
-  # TODO: add a barcode to indicate the form id
-  #form_id = formdata["id"]
-  #
   # Create bubble objects from the form data
   formsets = Bubble.readform(FORMDATA)
   #
@@ -55,6 +53,9 @@ def main(argv):
   rmarks = rm.readform(FORMDATA)
   for mark in rmarks:
     mark.draw(form_img)
+  #
+  # Draw the barcode
+  bc.drawbarcode(form_img, FORMDATA)
   #
   # Save the form
   form_img.save(OUTFILE, "TIFF")

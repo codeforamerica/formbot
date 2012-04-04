@@ -9,15 +9,20 @@ from formbot.regmark import *
 
 ##
 def imgmse(im1, im2):
-  if im1.mode == "RGBA":
+  if im1.mode != "L":
     im1 = im1.convert("L")
-  if im2.mode == "RGBA":
+  if im2.mode != "L":
     im2 = im2.convert("L")
   arr1 = img2array(im1)
   arr2 = img2array(im2)
   errarr = np.subtract(arr1, arr2)
   return np.sum(np.multiply(errarr, errarr)) / errarr.size
 
+def make_affine(alpha, theta, w):
+  return (alpha*np.cos(theta), -alpha*np.sin(theta), w[0], alpha*np.sin(theta), alpha*np.cos(theta), w[1])
+
+def get_box(center, pad, size):
+  return (max(0, center[0] - pad), max(center[1] - pad, 0), min(size[0], center[0] + pad), min(size[1], center[1] + pad))
 ##
 
 im = Image.open("/Users/prashant/Downloads/dataport_sample_mod01.tiff")
