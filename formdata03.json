@@ -1,11 +1,11 @@
 {
-  "id" : "FORM0001",
+  "id" : "a79869b0-83ad-11e1-b7bf-07a0b3620f76",
   "regmarks" :
     [ {"type" : 0, "bbox" : [50, 50, 250, 250]},
       {"type" : 0, "bbox" : [50, 1400, 250, 1600]},
       {"type" : 0, "bbox" : [1025, 1400, 1225, 1600]}
     ],
-  "barcode" : {"bbox" : [975, 50, 1225, 300], "data" : "FORM0001"},
+  "barcode" : {"bbox" : [975, 50, 1225, 300], "data" : "a79869b0-83ad-11e1-b7bf-07a0b3620f76"},
   "bubblesets" :
     [ {"bubbles" :
         [ {"center" : [600, 356], "radius" : 15},

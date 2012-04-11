@@ -1,11 +1,11 @@
 {
   "id" : "FORM0001",
   "regmarks" :
-    [ { "regmark" : {"type" : 0, "bbox" : [50, 50, 250, 250]} },
-      { "regmark" : {"type" : 0, "bbox" : [50, 950, 250, 1150]} },
-      { "regmark" : {"type" : 0, "bbox" : [550, 950, 750, 1150]} }
+    [ {"type" : 0, "bbox" : [50, 50, 250, 250]},
+      {"type" : 0, "bbox" : [50, 950, 250, 1150]},
+      {"type" : 0, "bbox" : [550, 950, 750, 1150]}
     ],
-  "sets" :
+  "bubblesets" :
     [ {"bubbles" :
         [ {"center" : [150, 425], "radius" : 15},
           {"center" : [210, 425], "radius" : 15},
