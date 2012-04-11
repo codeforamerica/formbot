@@ -68,6 +68,7 @@ class BubbleSet:
     else:
       self.bubbles = bubbles
     self.uid = "bubbleset%s" % BubbleSet.count
+    self.name = None
   def get_bubbles(self): return self.bubbles
   def add_bubble(self, bubble): self.bubbles.append(bubble)
   def get_uid(self): return self.uid
@@ -91,23 +92,30 @@ class FormSets:
     self.form_id = form_id
     self.sets = sets
 
+def readforms(s):
+  return extract_data(json.loads(s))
+
 def readform(filename):
   # Read the JSON string for the form data from the file
   formdatafile = file(filename, "r")
   # Load the form data
   formdata = json.load(formdatafile)
-  #formdatafile.close()
+  return extract_data(formdata)
 
-  form_id = formdata["id"]
-  sets = formdata["sets"]
-
+def extract_data(formdata, form_id=None):
+  if form_id is None:
+    form_id = formdata["id"]
+  sets = formdata["bubblesets"]
+  #
   # Create objects from the form data
   formsets = []
   for bsdct in sets:
     bs = BubbleSet()
     for bubdct in bsdct["bubbles"]:
       bs.add_bubble(Bubble(tuple(bubdct["center"]), bubdct["radius"]))
+    if "name" in bsdct:
+      bs.name = bsdct["name"]
     formsets.append(bs)
-
+  #
   return FormSets(form_id, formsets)
 

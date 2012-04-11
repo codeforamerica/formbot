@@ -162,15 +162,21 @@ def fiximage(ims, r0, r1, r2):
   return imfix
 
 
+def readforms(s):
+  return extract_data(json.loads(s))
+
 def readform(filename):
   # Read the JSON string for the form data from the file
   formdatafile = file(filename, "r")
   # Load the form data
   formdata = json.load(formdatafile)
+  return extract_data(formdata)
+
+def extract_data(formdata):
   #
   regs = formdata["regmarks"]
   rmarks = []
   for rmdct in regs:
-    mark = RegMark(tuple(rmdct["regmark"]["bbox"]))
+    mark = RegMark(tuple(rmdct["bbox"]))
     rmarks.append(mark)
   return rmarks
