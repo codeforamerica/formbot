@@ -40,7 +40,7 @@ def record_form(img_id, noact=False):
   #barcode_bbox = survey['paperinfo']['barcode']['bbox'];
   #
   # Get the image
-  img_url = IMG_BASE % img_id
+  img_url = '%s/surveys/%s/scans/%s' % (API_BASE, SURVEY_ID, img_id)
   img_data = None
   try:
     print 'Getting image from %s' % img_url
