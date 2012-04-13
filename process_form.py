@@ -26,6 +26,22 @@ class APIError(Exception):
   def __str__(self):
     return repr(self.value)
 
+# Get the unprocessed scans
+def get_scans(sid):
+  #
+  # Get the image info
+  scans_url = '%s/surveys/%s/scans' % (API_BASE, SURVEY_ID)
+  scans = None
+  try:
+    print 'Getting scanned image data from %s' % scans_url
+    data = json.loads(urllib2.urlopen(scans_url).read())
+  except urllib2.HTTPError, e:
+    print "HTTP error: %d" %e.code
+    raise APIError(e)
+  except urllib2.URLError, e:
+    print "Network error: %s" % e.reason.args[1]
+    raise APIError(e)
+  return [scan for scan in data['scans'] if 'status' in scan and scan['status'] == 'pending']
 
 # Update the status of a scan.
 def update_status(sid, img_id, status):
@@ -65,6 +81,7 @@ def get_image(img_url):
 def record_form(img_id, noact=False):
   #
   # Get the basic structural information from the survey data
+  # TODO: refactor so that we don't do this for every iteration
   survey_url = '%s/surveys/%s' % (API_BASE, SURVEY_ID)
   try:
     print 'Getting survey information from %s' % survey_url
@@ -134,10 +151,8 @@ def record_form(img_id, noact=False):
   # Read the barcode
   print 'Reading barcode'
   form_id = bc.readbarcode(form_img_fixed)
-  # XXX print("bar code data: %s" % barcodedata)
   #
   # Grab the form data
-  # XXX formdataurl = "http://localhost/~prashant/formbot_data/%s.json" % barcodedata
   formdata_url = '%s/surveys/%s/forms/%s' % (API_BASE, SURVEY_ID, form_id)
   try:
     print 'Getting form data from %s' % formdata_url
@@ -208,9 +223,18 @@ def main(argv=None):
   for o, a in opts:
     if o in ('-n', '--noact'):
       noact = True
-  # process arguments
-  img_id = args[0]
-  return record_form(img_id, noact)
+  # If we got an ID on the command line, process that image. Otherwise, get the
+  # list of images and process each of them
+  if len(args) > 0:
+    # process arguments
+    img_id = args[0]
+    return record_form(img_id, noact)
+  else:
+    scans = get_scans(SURVEY_ID);
+    for scan in scans:
+      ret = record_form(scan['id'], noact)
+      if (ret is not None) and (ret != 0):
+        return ret
 
 if __name__ == '__main__':
   sys.exit(main())
