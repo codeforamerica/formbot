@@ -10,15 +10,10 @@ from PIL import Image
 import json
 import sys
 import getopt
-
-# Survey ID
-SURVEY_ID = '1'
+import os
 
 # API base URL
-API_BASE = 'http://localhost:3000'
-
-# Image data base URL
-IMG_BASE = 'http://localhost/~prashant/formbot_images/%s'
+API_BASE = os.getenv('SURVEY_API_BASE', 'http://localhost:3000');
 
 class APIError(Exception):
   def __init__(self, value):
@@ -30,7 +25,7 @@ class APIError(Exception):
 def get_scans(sid):
   #
   # Get the image info
-  scans_url = '%s/surveys/%s/scans' % (API_BASE, SURVEY_ID)
+  scans_url = '%s/surveys/%s/scans' % (API_BASE, sid)
   scans = None
   try:
     print 'Getting scanned image data from %s' % scans_url
@@ -78,11 +73,11 @@ def get_image(img_url):
   return img_data
 
 # Process a form image and record the results to the database
-def record_form(img_id, noact=False):
+def record_form(survey_id, img_id, noact=False):
   #
   # Get the basic structural information from the survey data
   # TODO: refactor so that we don't do this for every iteration
-  survey_url = '%s/surveys/%s' % (API_BASE, SURVEY_ID)
+  survey_url = '%s/surveys/%s' % (API_BASE, survey_id)
   try:
     print 'Getting survey information from %s' % survey_url
     survey_json = urllib2.urlopen(survey_url).read()
@@ -101,7 +96,7 @@ def record_form(img_id, noact=False):
   #barcode_bbox = survey['paperinfo']['barcode']['bbox'];
   #
   # Get the image info
-  img_info_url = '%s/surveys/%s/scans/%s' % (API_BASE, SURVEY_ID, img_id)
+  img_info_url = '%s/surveys/%s/scans/%s' % (API_BASE, survey_id, img_id)
   img_info = None
   try:
     print 'Getting image info from %s' % img_info_url
@@ -132,7 +127,7 @@ def record_form(img_id, noact=False):
   # Update status to 'pending'
   if not noact:
     try:
-      update_status(SURVEY_ID, img_id, 'working')
+      update_status(survey_id, img_id, 'working')
     except APIError, e:
       return 2
   #
@@ -153,7 +148,7 @@ def record_form(img_id, noact=False):
   form_id = bc.readbarcode(form_img_fixed)
   #
   # Grab the form data
-  formdata_url = '%s/surveys/%s/forms/%s' % (API_BASE, SURVEY_ID, form_id)
+  formdata_url = '%s/surveys/%s/forms/%s' % (API_BASE, survey_id, form_id)
   try:
     print 'Getting form data from %s' % formdata_url
     form_json = urllib2.urlopen(formdata_url).read()
@@ -181,14 +176,14 @@ def record_form(img_id, noact=False):
     responses.append({'parcel_id' : parcel_piece['parcel_id'], 'responses' : answers})
   #
   # Print the data that we got
-  print 'Survey ID: %s' % SURVEY_ID
+  print 'Survey ID: %s' % survey_id
   print 'Form ID: %s' % form_id
   print json.dumps(responses)
   #
   # Record the data through the API
   if noact:
     return
-  response_url = '%s/surveys/%s/responses' % (API_BASE, SURVEY_ID)
+  response_url = '%s/surveys/%s/responses' % (API_BASE, survey_id)
   try:
     print 'Posting responses to %s' % survey_url
     data = json.dumps({'responses' : responses})
@@ -206,7 +201,7 @@ def record_form(img_id, noact=False):
   #
   # Update status to 'complete'
   try:
-    update_status(SURVEY_ID, img_id, 'complete')
+    update_status(survey_id, img_id, 'complete')
   except APIError, e:
     return 2
 
@@ -215,24 +210,26 @@ def main(argv=None):
   if argv is None:
     argv = sys.argv
   try:
-    opts, args = getopt.getopt(argv[1:], 'n', ['noact'])
-  except:
-    print msg
+    opts, args = getopt.getopt(argv[1:], 'ns:', ['noact', 'survey'])
+  except getopt.error, e:
+    print e.msg
     return 2
   # process options
   for o, a in opts:
     if o in ('-n', '--noact'):
       noact = True
+    elif o in ('-s', '--survey'):
+      survey_id = 1
   # If we got an ID on the command line, process that image. Otherwise, get the
   # list of images and process each of them
   if len(args) > 0:
     # process arguments
     img_id = args[0]
-    return record_form(img_id, noact)
+    return record_form(survey_id, img_id, noact)
   else:
-    scans = get_scans(SURVEY_ID);
+    scans = get_scans(survey_id);
     for scan in scans:
-      ret = record_form(scan['id'], noact)
+      ret = record_form(survey_id, scan['id'], noact)
       if (ret is not None) and (ret != 0):
         return ret
 

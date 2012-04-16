@@ -1,2 +1,3 @@
 *.pyc
 localdata
+setenv*.sh

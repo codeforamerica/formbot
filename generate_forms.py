@@ -7,8 +7,10 @@ import json
 import sys
 import getopt
 import urllib2
+import os
 
-API_BASE = 'http://localhost:3000'
+# API base URL
+API_BASE = os.getenv('SURVEY_API_BASE', 'http://localhost:3000');
 
 # Get survey information from the API
 def get_survey(survey_id):
