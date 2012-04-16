@@ -11,8 +11,11 @@ def drawbarcode(img, filename):
   formdatafile = file(filename, "r")
   # Load the form data
   formdata = json.load(formdatafile)
-  #
   data = formdata["barcode"]["data"]
+  drawbarcode_json(img, formdata, data)
+
+def drawbarcode_json(img, formdata, data):
+  #
   bbox = tuple(formdata["barcode"]["bbox"])
   #
   width = bbox[2] - bbox[0]

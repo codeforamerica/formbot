@@ -104,7 +104,8 @@ def readform(filename):
 
 def extract_data(formdata, form_id=None):
   if form_id is None:
-    form_id = formdata["id"]
+    if "id" in formdata:
+      form_id = formdata["id"]
   sets = formdata["bubblesets"]
   #
   # Create objects from the form data
