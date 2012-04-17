@@ -5,6 +5,10 @@ The name says it all! This is the form-processing robot of the future!
 
 Formbot 2000 processes scanned images of fill-in-the-bubble forms. It's meant to interact with the survey-api server. It will get scanned images using the API and send back the results.
 
+Set the base URL for the API with the `SURVEY_API_BASE` environment variable. For example:
+
+    export SURVEY_API_BASE="http://localhost:3000"
+
 To process all of the scanned forms with status `pending`:
 
     $ ./process_form.py -s SURVEY_ID
