@@ -12,10 +12,14 @@ HEIGHT = 1650.0
 
 # Create a 2D array from an image
 def img2array(im):
-  im = im.convert("L")
+  if im.mode != "L":
+    im = im.convert("L")
   x = np.empty(flip(im.size))
   x.flat = im.getdata()
+  # For the signal/filter, a mark is a high value. For the image file, a mark
+  # is a low value (black)
   x = 255 - x
+  x = (x - 128.0) / 128.0
   return x
 
 def array2img(x):
@@ -37,10 +41,12 @@ class RegMark:
         bbox[1] + self.zinnerbbox[1],
         bbox[0] + self.zinnerbbox[2],
         bbox[1] + self.zinnerbbox[3])
+
   def get_center(self):
     width = self.bbox[2] - self.bbox[0]
     height = self.bbox[3] - self.bbox[1]
     return (self.bbox[0] + int(width/2), self.bbox[1] + int(height/2))
+
   def draw(self, im=None):
     if im is None:
       im = Image.new("RGBA", (self.zbbox[2], self.zbbox[3]), (255,255,255,255))
@@ -53,33 +59,31 @@ class RegMark:
     #d.ellipse(bbox, outline=(0,0,0,255))
     #d.ellipse(innerbbox, outline=(0,0,0,255), fill=(0,0,0,255))
     return im
+
   def drawhelp(self, bbox, innerbbox, im):
     d = ImageDraw.Draw(im)
     color = None
     if im.mode == "RGBA":
       color = (0,0,0,255)
+      bgcolor = (255,255,255,255)
     elif im.mode == "RGB":
       color = (0,0,0)
+      bgcolor = (255,255,255)
     elif im.mode == "L":
       color = 0
+      bgcolor = 255
+    d.rectangle(bbox, outline=bgcolor, fill=bgcolor)
     d.ellipse(bbox, outline=color)
     d.ellipse(innerbbox, outline=color, fill=color)
+
   def find(self, im):
     # Create a 2D array from the image
-    if im.mode != "L":
-      im = im.convert("L")
-    x = np.empty(flip(im.size))
-    # For the signal/filter, a mark is a high value. For the image file, a mark is a low value (black)
-    x.flat = im.getdata()
-    x = 255 - x
+    x = img2array(im)
     #
     # Create a 2D filter array from the registration mark
-    regim = Image.new("L", im.size, 255)
+    regim = Image.new("L", im.size, 128)
     self.drawhelp(self.zbbox, self.zinnerbbox, regim)
-    h = np.empty(flip(regim.size))
-    # For the signal/filter, a mark is a high value. For the image file, a mark is a low value (black)
-    h.flat = regim.getdata()
-    h = 255 - h
+    h = img2array(regim)
     #
     # Take FFTs of image and filter
     X = fft.fft2(x)
@@ -96,8 +100,10 @@ class RegMark:
     #
     # Find the maxima. Look near the expected location.
     search_buffer = 100
-    expected_min = (max(self.bbox[0] - search_buffer, 0), max(self.bbox[1] - search_buffer, 0))
-    expected_max = (min(self.bbox[2] + search_buffer, y.shape[1]), min(self.bbox[3] + search_buffer, y.shape[0]))
+    expected_min = (max(self.bbox[0] - search_buffer, 0),
+                    max(self.bbox[1] - search_buffer, 0))
+    expected_max = (min(self.bbox[2] + search_buffer, y.shape[1]),
+                    min(self.bbox[3] + search_buffer, y.shape[0]))
     if DEBUG:
       print("expected_min: (%s, %s)" % expected_min)
       print("expected_max: (%s, %s)" % expected_max)
@@ -115,9 +121,12 @@ class RegMark:
       print("maxval: %s" % maxval)
     return maxloc
 
-# TODO: work with a list of registration marks. Two is probably enough, three can be optional.
+
+# TODO: work with a list of registration marks. Two is probably enough, three
+# can be optional.
 def fiximage(ims, r0, r1, r2):
-  # Scale the image to approximately 8.5x11 @ 150 dpi, in case we got an odd resolution
+  # Scale the image to approximately 8.5x11 @ 150 dpi, in case we got an odd
+  # resolution
   oldsize = ims.size
   factor = WIDTH / oldsize[0]
   newsize = (int(factor * oldsize[0]), int(factor * oldsize[1]))
@@ -164,7 +173,8 @@ def fiximage(ims, r0, r1, r2):
   # Create a fixed version of the input image
   tmp = Image.new("L", ims.size, 255)
   tmp.putdata(ims.getdata(), -1, 255)
-  affine = (alphap*np.cos(thetap), -alphap*np.sin(thetap), wp[0], alphap*np.sin(thetap), alphap*np.cos(thetap), wp[1])
+  affine = (alphap*np.cos(thetap), -alphap*np.sin(thetap), wp[0],
+            alphap*np.sin(thetap), alphap*np.cos(thetap), wp[1])
   imfix = tmp.transform(ims.size, Image.AFFINE, affine, Image.BILINEAR)
   tmp = imfix.copy()
   imfix.putdata(tmp.getdata(), -1, 255)
