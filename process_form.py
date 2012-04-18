@@ -219,7 +219,7 @@ def main(argv=None):
     if o in ('-n', '--noact'):
       noact = True
     elif o in ('-s', '--survey'):
-      survey_id = 1
+      survey_id = a
   # If we got an ID on the command line, process that image. Otherwise, get the
   # list of images and process each of them
   if len(args) > 0:
