@@ -7,6 +7,9 @@ import json
 
 DEBUG = False
 
+WIDTH = 1275.0
+HEIGHT = 1650.0
+
 # Create a 2D array from an image
 def img2array(im):
   im = im.convert("L")
@@ -114,16 +117,23 @@ class RegMark:
 
 # TODO: work with a list of registration marks. Two is probably enough, three can be optional.
 def fiximage(ims, r0, r1, r2):
+  # Scale the image to approximately 8.5x11 @ 150 dpi, in case we got an odd resolution
+  oldsize = ims.size
+  factor = WIDTH / oldsize[0]
+  newsize = (int(factor * oldsize[0]), int(factor * oldsize[1]))
+  ims = ims.resize(newsize, Image.BILINEAR)
   ims = ims.convert("L")
+
   # Find the registration mark locations in the shifted image
   r0loc = r0.find(ims)
   r1loc = r1.find(ims)
   r2loc = r2.find(ims)
+
   # Get the original registration mark locations
   r0loc_orig = r0.get_center()
   r1loc_orig = r1.get_center()
   r2loc_orig = r2.get_center()
-  #
+
   # Turn the points into complex numbers to make the math simpler
   z0 = r0loc_orig[0] + 1j*r0loc_orig[1]
   z0p = r0loc[0] + 1j*r0loc[1]
@@ -131,7 +141,7 @@ def fiximage(ims, r0, r1, r2):
   z1p = r1loc[0] + 1j*r1loc[1]
   z2 = r2loc_orig[0] + 1j*r2loc_orig[1]
   z2p = r2loc[0] + 1j*r2loc[1]
-  #
+
   # 0
   tmp = (z1p - z0p) / (z1 - z0)
   theta0 = np.angle(tmp)
@@ -144,13 +154,13 @@ def fiximage(ims, r0, r1, r2):
   alpha1 = np.abs(tmp)
   w1 = z0p - alpha1*z0*np.exp(1j*theta1)
   if DEBUG: print("alpha1: %s\ttheta1: %s\tw1: %s" % (alpha1, theta1, w1))
-  #
+
   # Average the calcuated rotation angles and shifts
   wp = (lambda x: (np.real(x), np.imag(x))) (np.average((w0, w1)))
   thetap = np.average((np.real(theta0), np.real(theta1)))
   alphap = (alpha0 + alpha1)/2
   if DEBUG: print("alphap: %s\tthetap: %s\twp: %s" % (alphap, thetap, wp))
-  #
+
   # Create a fixed version of the input image
   tmp = Image.new("L", ims.size, 255)
   tmp.putdata(ims.getdata(), -1, 255)

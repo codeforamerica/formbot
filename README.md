@@ -53,3 +53,10 @@ where `OUTPUT_DIR` is where the form images should go, `SKELETON_FORM` is the te
       "parcels" : ["1", "2", "3", "4", "5", "6"]
     }
 
+
+To generate forms that each cover multiple parcels, use `generate_multiforms.py`:
+
+    $ ./generate_multiforms.py -i MULTI_INPUT.json -s SKELETON_FORM -o OUTPUT_DIR
+
+See `sample_multiparcel_form_info.json` for an example `MULTI_INPUT.json` input.
+
