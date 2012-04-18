@@ -1,0 +1,30 @@
+{
+  "template" :
+  {
+    "survey" : "69bef580-88eb-11e1-af82-a7908e0eb230",
+    "parcels" : [
+      { "bubblesets": [
+          { "name": "Q0", "bubbles":[{"center":[600,356],"radius":15},{"center":[600,394],"radius":15},{"center":[600,432],"radius":15},{"center":[600,432],"radius":15}] },
+          { "name": "Q1", "bubbles":[{"center":[347,694],"radius":15},{"center":[384,694],"radius":15},{"center":[422,694],"radius":15},{"center":[459,694],"radius":15}] }
+        ] },
+      { "bubblesets": [
+          { "name": "Q0", "bubbles":[{"center":[600,456],"radius":15},{"center":[600,394],"radius":15},{"center":[600,432],"radius":15},{"center":[600,432],"radius":15}] },
+          { "name": "Q1", "bubbles":[{"center":[347,694],"radius":15},{"center":[384,694],"radius":15},{"center":[422,694],"radius":15},{"center":[459,694],"radius":15}] }
+        ] },
+      { "bubblesets": [
+          { "name": "Q0", "bubbles":[{"center":[600,356],"radius":15},{"center":[600,394],"radius":15},{"center":[600,432],"radius":15},{"center":[600,432],"radius":15}] },
+          { "name": "Q1", "bubbles":[{"center":[347,694],"radius":15},{"center":[384,694],"radius":15},{"center":[422,694],"radius":15},{"center":[459,694],"radius":15}] }
+        ] },
+      { "bubblesets": [
+          { "name": "Q0", "bubbles":[{"center":[600,356],"radius":15},{"center":[600,394],"radius":15},{"center":[600,432],"radius":15},{"center":[600,432],"radius":15}] },
+          { "name": "Q1", "bubbles":[{"center":[347,694],"radius":15},{"center":[384,694],"radius":15},{"center":[422,694],"radius":15},{"center":[459,694],"radius":15}] }
+        ] }
+    ]
+  },
+  "parcelsets" :
+    [
+      ["21", "22", "23", "24"],
+      ["25", "26", "27", "28"],
+      ["29", "30", "31", "32"]
+    ]
+}
