@@ -11,6 +11,7 @@ import json
 import sys
 import getopt
 import os
+import time
 
 # API base URL
 API_BASE = os.getenv('SURVEY_API_BASE', 'http://localhost:3000')
