@@ -94,17 +94,19 @@ def get_image(img_url):
 # Check if there are images to process
 def check_work():
   url = '%s/work' % API_BASE
+  work = False
   try:
     headers = { 'X-Comet-Timeout' : COMET_DELAY }
     req = urllib2.Request(url, headers=headers)
     data = json.loads(urllib2.urlopen(req).read())
+    work = data['haswork']
   except urllib2.HTTPError, e:
     print "HTTP error: %d" %e.code
     raise APIError(e)
   except urllib2.URLError, e:
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
-  return data['haswork']
+  return work
 
 # Process a form image and record the results to the database
 def record_form(survey_id, img_id, noact=False):
@@ -275,7 +277,14 @@ def main(argv=None):
     while True:
       # Check if there's work
       print 'Checking for work every %s ms' % COMET_DELAY
-      if check_work():
+      work = False
+      try:
+        work = check_work()
+      except APIError, e:
+        # The API is not ready. Wait a little before trying again.
+        print 'API Error: %s' % e
+        time.sleep(5)
+      if work:
         # Iterate over all of the surveys.
         survey_ids = get_surveys()
         for survey_id in survey_ids:
