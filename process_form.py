@@ -13,7 +13,11 @@ import getopt
 import os
 
 # API base URL
-API_BASE = os.getenv('SURVEY_API_BASE', 'http://localhost:3000');
+API_BASE = os.getenv('SURVEY_API_BASE', 'http://localhost:3000')
+
+# The amount of time the server should wait before responding that there are no
+# images to be processed
+COMET_DELAY = 10000
 
 class APIError(Exception):
   def __init__(self, value):
@@ -37,6 +41,21 @@ def get_scans(sid):
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
   return [scan for scan in data['scans'] if 'status' in scan and scan['status'] == 'pending']
+
+# Get all of the survey IDs
+def get_surveys():
+  url = '%s/surveys' % API_BASE
+  ids = None
+  try:
+    print 'Getting surveys from %s' % url
+    data = json.loads(urllib2.urlopen(url).read())
+  except urllib2.HTTPError, e:
+    print "HTTP error: %d" %e.code
+    raise APIError(e)
+  except urllib2.URLError, e:
+    print "Network error: %s" % e.reason.args[1]
+    raise APIError(e)
+  return [survey['id'] for survey in data['surveys']]
 
 # Update the status of a scan.
 def update_status(sid, img_id, status):
@@ -63,7 +82,7 @@ def get_image(img_url):
   img_data = None
   try:
     print 'Getting image from %s' % img_url
-    img_data = urllib2.urlopen(img_url).read();
+    img_data = urllib2.urlopen(img_url).read()
   except urllib2.HTTPError, e:
     print "HTTP error: %d" %e.code
     raise APIError(e)
@@ -71,6 +90,21 @@ def get_image(img_url):
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
   return img_data
+
+# Check if there are images to process
+def check_work():
+  url = '%s/work' % API_BASE
+  try:
+    headers = { 'X-Comet-Timeout' : COMET_DELAY }
+    req = urllib2.Request(url, headers=headers)
+    data = json.loads(urllib2.urlopen(req).read())
+  except urllib2.HTTPError, e:
+    print "HTTP error: %d" %e.code
+    raise APIError(e)
+  except urllib2.URLError, e:
+    print "Network error: %s" % e.reason.args[1]
+    raise APIError(e)
+  return data['haswork']
 
 # Process a form image and record the results to the database
 def record_form(survey_id, img_id, noact=False):
@@ -207,6 +241,7 @@ def record_form(survey_id, img_id, noact=False):
 
 def main(argv=None):
   noact = False
+  survey_id = None
   if argv is None:
     argv = sys.argv
   try:
@@ -220,18 +255,38 @@ def main(argv=None):
       noact = True
     elif o in ('-s', '--survey'):
       survey_id = a
-  # If we got an ID on the command line, process that image. Otherwise, get the
-  # list of images and process each of them
+  # If we got a survey ID and a scan ID on the command line, process that
+  # image.
   if len(args) > 0:
     # process arguments
     img_id = args[0]
     return record_form(survey_id, img_id, noact)
-  else:
-    scans = get_scans(survey_id);
+  elif survey_id is not None:
+    # If we got a survey ID, get the pending images for that survey and process
+    # each of them.
+    scans = get_scans(survey_id)
     for scan in scans:
       ret = record_form(survey_id, scan['id'], noact)
       if (ret is not None) and (ret != 0):
         return ret
+  else:
+    # Keep looping. check_work will wait on the server response, so this will
+    # not be a super tight loop.
+    while True:
+      # Check if there's work
+      print 'Checking for work every %s ms' % COMET_DELAY
+      if check_work():
+        # Iterate over all of the surveys.
+        survey_ids = get_surveys()
+        for survey_id in survey_ids:
+          print
+          print 'Processing survey %s' % survey_id
+          print
+          scans = get_scans(survey_id)
+          for scan in scans:
+            ret = record_form(survey_id, scan['id'], noact)
+            if (ret is not None) and (ret != 0):
+              return ret
 
 if __name__ == '__main__':
   sys.exit(main())
