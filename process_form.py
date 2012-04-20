@@ -43,7 +43,7 @@ def get_scans(sid):
     raise APIError(e)
   return [scan for scan in data['scans'] if 'status' in scan and scan['status'] == 'pending']
 
-# Get all of the survey IDs
+# Get all of the surveys
 def get_surveys():
   url = '%s/surveys' % API_BASE
   ids = None
@@ -56,7 +56,7 @@ def get_surveys():
   except urllib2.URLError, e:
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
-  return [survey['id'] for survey in data['surveys']]
+  return data['surveys']
 
 # Update the status of a scan.
 def update_status(sid, img_id, status):
@@ -110,7 +110,7 @@ def check_work():
   return work
 
 # Process a form image and record the results to the database
-def record_form(survey_id, img_id, noact=False):
+def record_form(survey_id, img_id, noact=False, paperinfo=None):
   #
   # Get the basic structural information from the survey data
   # TODO: refactor so that we don't do this for every iteration
@@ -182,7 +182,13 @@ def record_form(survey_id, img_id, noact=False):
   #
   # Read the barcode
   print 'Reading barcode'
-  form_id = bc.readbarcode(form_img_fixed)
+  # Crop out an area around the barcode, to make life easier on the decoder.
+  bc_bbox = paperinfo['barcode']['bbox']
+  dpi = paperinfo['dpi']
+  paper_size = (int(8.5*dpi), int(11.0*dpi))
+  crop_bbox = (max(bc_bbox[0] - 50, 0), max(bc_bbox[1] - 50, 0),
+               min(bc_bbox[2] + 50, paper_size[0]), min(bc_bbox[3] + 50, paper_size[1]))
+  form_id = bc.readbarcode(form_img_fixed.crop(crop_bbox))
   #
   # Grab the form data
   formdata_url = '%s/surveys/%s/forms/%s' % (API_BASE, survey_id, form_id)
@@ -287,14 +293,15 @@ def main(argv=None):
         time.sleep(5)
       if work:
         # Iterate over all of the surveys.
-        survey_ids = get_surveys()
-        for survey_id in survey_ids:
+        surveys = get_surveys()
+        for survey in surveys:
+          survey_id = survey['id']
           print
           print 'Processing survey %s' % survey_id
           print
           scans = get_scans(survey_id)
           for scan in scans:
-            ret = record_form(survey_id, scan['id'], noact)
+            ret = record_form(survey_id, scan['id'], noact, paperinfo=survey['paperinfo'])
             if (ret is not None) and (ret != 0):
               return ret
 
