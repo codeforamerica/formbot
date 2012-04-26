@@ -179,6 +179,9 @@ def record_form(survey, img_id, noact=False, paperinfo=None):
   #
   print 'Processing answers'
 
+  source = {'type' : 'paper',
+            'scan' : img_id,
+            'form': form_id}
   # Iterate over each parcel on the form
   responses = []
   for parcel_piece in form_data['parcels']:
@@ -188,7 +191,10 @@ def record_form(survey, img_id, noact=False, paperinfo=None):
     answers = {}
     for bs in formset.sets:
       answers[bs.name] = bs.get_single_answer(form_img_fixed)
-    responses.append({'parcel_id' : parcel_piece['parcel_id'], 'responses' : answers})
+    item = {'parcel_id' : parcel_piece['parcel_id'],
+            'responses' : answers,
+            'source' : source}
+    responses.append(item)
 
   # Print the data that we got
   print 'Survey ID: %s' % survey_id
