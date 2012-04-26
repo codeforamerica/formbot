@@ -175,7 +175,7 @@ def record_form(survey_id, img_id, noact=False, paperinfo=None):
   except APIError, e:
     return 2
   #
-  # Update status to 'pending'
+  # Update status to 'working'
   if not noact:
     try:
       update_status(survey_id, img_id, 'working')
