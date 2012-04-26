@@ -17,6 +17,8 @@ def drawbarcode(img, filename):
   drawbarcode_json(img, formdata, data)
 
 def drawbarcode_json(img, formdata, data):
+  # Convert to upper-case so we can use an alphanumeric QR code
+  data = data.upper()
   #
   bbox = tuple(formdata["barcode"]["bbox"])
   #
@@ -32,21 +34,23 @@ def drawbarcode_json(img, formdata, data):
 
 def readbarcode(img):
   # This code spun off a Java process, which doesn't work on heroku.
-  ## decode = 'java', '-cp', 'lib/core.jar:lib/javase.jar', 'com.google.zxing.client.j2se.CommandLineRunner', '-'
-  ## decode = subprocess.Popen(decode, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-  ## #
-  ## img.save(decode.stdin, 'PNG')
-  ## decode.stdin.close()
-  ## decode.wait()
-  ## #
-  ## decoded = decode.stdout.read().strip()
+  decode = 'java', '-cp', 'lib/core.jar:lib/javase.jar', 'com.google.zxing.client.j2se.CommandLineRunner', '-'
+  decode = subprocess.Popen(decode, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+  #
+  img.save(decode.stdin, 'PNG')
+  decode.stdin.close()
+  decode.wait()
+  #
+  decoded = decode.stdout.read().strip()
 
   # Make a call to a decoder API
-  url = 'http://zxing.org/w/decode'
-  f = StringIO.StringIO()
-  img.save(f, 'PNG')
-  f.seek(0)
-  req = requests.post(url, files={'f': f}, data={'full': 'true'})
-  # Trim the \n at the end of the result
-  decoded = req.text[:-1]
-  return decoded
+  ## url = 'http://zxing.org/w/decode'
+  ## f = StringIO.StringIO()
+  ## img.save(f, 'PNG')
+  ## f.seek(0)
+  ## req = requests.post(url, files={'f': f}, data={'full': 'true'})
+  ## # Trim the \n at the end of the result
+  ## decoded = req.text[:-1]
+
+  # Convert to lower-case for compatibility with API.
+  return decoded.lower()

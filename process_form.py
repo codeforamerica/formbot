@@ -30,10 +30,10 @@ class APIError(Exception):
 def get_scans(sid):
   #
   # Get the image info
-  scans_url = '%s/surveys/%s/scans' % (API_BASE, sid)
+  scans_url = '%s/surveys/%s/scans?status=pending' % (API_BASE, sid)
   scans = None
   try:
-    print 'Getting scanned image data from %s' % scans_url
+    print 'Getting pending scanned image data from %s' % scans_url
     data = json.loads(urllib2.urlopen(scans_url).read())
   except urllib2.HTTPError, e:
     print "HTTP error: %d" %e.code
@@ -41,7 +41,7 @@ def get_scans(sid):
   except urllib2.URLError, e:
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
-  return [scan for scan in data['scans'] if 'status' in scan and scan['status'] == 'pending']
+  return data['scans']
 
 # Get all of the surveys
 def get_surveys():
@@ -57,6 +57,20 @@ def get_surveys():
     print "Network error: %s" % e.reason.args[1]
     raise APIError(e)
   return data['surveys']
+
+# Get a survey
+def get_survey(sid):
+  url = '%s/surveys/%s' % (API_BASE, sid)
+  try:
+    print 'Getting survey %s from url %s' % (sid, url)
+    data = json.loads(urllib2.urlopen(url).read())
+  except urllib2.HTTPError, e:
+    print "HTTP error: %d" %e.code
+    raise APIError(e)
+  except urllib2.URLError, e:
+    print "Network error: %s" % e.reason.args[1]
+    raise APIError(e)
+  return data['survey']
 
 # Update the status of a scan.
 def update_status(sid, img_id, status):
@@ -183,12 +197,18 @@ def record_form(survey_id, img_id, noact=False, paperinfo=None):
   # Read the barcode
   print 'Reading barcode'
   # Crop out an area around the barcode, to make life easier on the decoder.
+  # XXX
+  print 'paperinfo: %s' % json.dumps(paperinfo)
   bc_bbox = paperinfo['barcode']['bbox']
   dpi = paperinfo['dpi']
   paper_size = (int(8.5*dpi), int(11.0*dpi))
   crop_bbox = (max(bc_bbox[0] - 50, 0), max(bc_bbox[1] - 50, 0),
                min(bc_bbox[2] + 50, paper_size[0]), min(bc_bbox[3] + 50, paper_size[1]))
-  form_id = bc.readbarcode(form_img_fixed.crop(crop_bbox))
+  # XXX
+  form_img_fixed.save('/tmp/debug_fixed.tif', 'TIFF')
+  #form_id = bc.readbarcode(form_img_fixed.crop(crop_bbox))
+  # XXX
+  form_id = bc.readbarcode(form_img_fixed)
   #
   # Grab the form data
   formdata_url = '%s/surveys/%s/forms/%s' % (API_BASE, survey_id, form_id)
@@ -253,17 +273,20 @@ def main(argv=None):
   survey_id = None
   if argv is None:
     argv = sys.argv
+
   try:
     opts, args = getopt.getopt(argv[1:], 'ns:', ['noact', 'survey'])
   except getopt.error, e:
     print e.msg
     return 2
+
   # process options
   for o, a in opts:
     if o in ('-n', '--noact'):
       noact = True
     elif o in ('-s', '--survey'):
       survey_id = a
+
   # If we got a survey ID and a scan ID on the command line, process that
   # image.
   if len(args) > 0:
@@ -273,12 +296,32 @@ def main(argv=None):
   elif survey_id is not None:
     # If we got a survey ID, get the pending images for that survey and process
     # each of them.
+    survey = get_survey(survey_id)
     scans = get_scans(survey_id)
     for scan in scans:
-      ret = record_form(survey_id, scan['id'], noact)
+      ret = record_form(survey_id, scan['id'], noact, paperinfo=survey['paperinfo'])
       if (ret is not None) and (ret != 0):
         return ret
   else:
+    ret = 0
+    # Loop over surveys. Process all of the pending scans.
+    surveys = get_surveys()
+    for survey in surveys:
+      survey_id = survey['id']
+      print
+      print 'Processing survey %s' % survey_id
+      print
+      scans = get_scans(survey_id)
+      for scan in scans:
+        tmp_ret = record_form(survey_id, scan['id'], noact, paperinfo=survey['paperinfo'])
+        if tmp_ret is not None and tmp_ret != 0:
+          ret = tmp_ret
+    return ret
+
+  # The following code lets us wait until work is available, so that the tool
+  # can run as a worker process. But running workers is problematic right now,
+  # so one-off use is more appropriate.
+  if False:
     # Keep looping. check_work will wait on the server response, so this will
     # not be a super tight loop.
     while True:
