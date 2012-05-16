@@ -5,9 +5,10 @@ import json
 SQRT2 = math.sqrt(2)
 
 class Bubble:
-  def __init__(self, center, radius):
+  def __init__(self, center, radius, answer=None):
     self.center = center
     self.radius = radius
+    self.answer = answer
   def get_center(self): return self.center
   def set_center(self, center): self.center = center
   def get_radius(self): return self.radius
@@ -85,6 +86,9 @@ class BubbleSet:
         maxfill = val
         maxindex = i
     assert(maxindex > -1)
+    answer = self.bubbles[maxindex].answer
+    if answer is not None:
+      return answer
     return maxindex
 
 class FormSets:
@@ -113,7 +117,10 @@ def extract_data(formdata, form_id=None):
   for bsdct in sets:
     bs = BubbleSet()
     for bubdct in bsdct["bubbles"]:
-      bs.add_bubble(Bubble(tuple(bubdct["center"]), bubdct["radius"]))
+      if "answer" in bubdct:
+        bs.add_bubble(Bubble(tuple(bubdct["center"]), bubdct["radius"], bubdct["answer"]))
+      else:
+        bs.add_bubble(Bubble(tuple(bubdct["center"]), bubdct["radius"]))
     if "name" in bsdct:
       bs.name = bsdct["name"]
     formsets.append(bs)
