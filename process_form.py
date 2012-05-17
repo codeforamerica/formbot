@@ -190,7 +190,7 @@ def record_form(survey, img_id, noact=False, paperinfo=None):
     # Check responses to each bubble set
     answers = {}
     for bs in formset.sets:
-      answers[bs.name] = bs.get_single_answer(form_img_fixed)
+      answers[bs.name] = bs.read_bubbles(form_img_fixed)
     item = {'parcel_id' : parcel_piece['parcel_id'],
             'responses' : answers,
             'source' : source}

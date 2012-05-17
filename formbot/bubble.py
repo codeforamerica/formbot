@@ -4,6 +4,9 @@ import json
 
 SQRT2 = math.sqrt(2)
 
+TYPE_SINGLE = 1 # This is the default. The most-filled-in bubble is the one answer.
+TYPE_MULTICHOICE = 2 # Multiple bubbles can be filled in.
+
 class Bubble:
   def __init__(self, center, radius, answer=None):
     self.center = center
@@ -46,9 +49,9 @@ class Bubble:
     val = 0
     coloradder = None
     if im.mode == "RGBA":
-      coloradder = lambda p: p[3]*(p[0] * 299/1000 + p[1] * 587/1000 + p[2] * 114/1000)/255
+      coloradder = lambda p: p[3]*(p[0] * 299.0/1000 + p[1] * 587.0/1000 + p[2] * 114.0/1000)/255
     elif im.mode == "RGB":
-      coloradder = lambda p: p[0] * 299/1000 + p[1] * 587/1000 + p[2] * 114/1000
+      coloradder = lambda p: p[0] * 299.0/1000 + p[1] * 587.0/1000 + p[2] * 114.0/1000
     elif im.mode == "L":
       coloradder = lambda p: p
     for pixel in temp.getdata():
@@ -63,19 +66,40 @@ class Bubble:
 # Collection of bubbles, all of which correspond to one question
 class BubbleSet:
   count = 0
-  def __init__(self, bubbles=None):
+  def __init__(self, bubbles=None, type=TYPE_SINGLE):
     if bubbles is None:
       self.bubbles = []
     else:
       self.bubbles = bubbles
     self.uid = "bubbleset%s" % BubbleSet.count
     self.name = None
+    self.type = type # Check the type of the bubble set
   def get_bubbles(self): return self.bubbles
   def add_bubble(self, bubble): self.bubbles.append(bubble)
   def get_uid(self): return self.uid
   def draw(self, im):
     for b in self.bubbles:
       b.draw(im)
+
+  def read_bubbles(self, im):
+    if self.type == TYPE_MULTICHOICE:
+      return self.get_multi_answers(im)
+    return self.get_single_answer(im)
+
+  # Check the bubble locations in image im. Determine which ones have been filled in.
+  def get_multi_answers(self, im):
+    threshold = 191 # 75% filled in
+    filled = []
+    for i in range(len(self.bubbles)):
+      val = self.bubbles[i].get_average_fill(im)
+      if (val > threshold):
+        answer = self.bubbles[i].answer
+        if (answer is not None):
+          filled.append(answer)
+        else:
+          filled.append(i)
+    return filled
+
   # Check the bubble locations in image im. Determine which bubble was filled in.
   def get_single_answer(self, im):
     maxfill = -1
@@ -123,6 +147,9 @@ def extract_data(formdata, form_id=None):
         bs.add_bubble(Bubble(tuple(bubdct["center"]), bubdct["radius"]))
     if "name" in bsdct:
       bs.name = bsdct["name"]
+    bstype = bsdct.get("type", None)
+    if bstype is not None:
+      bs.type = bstype
     formsets.append(bs)
   #
   return FormSets(form_id, formsets)
